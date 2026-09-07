@@ -1,10 +1,11 @@
 """
 ================================================================================
 PRODUCTION-GRADE PERSON DETECTION, TRACKING & VISUAL RE-IDENTIFICATION SYSTEM
-PHASE 1, 2 & 3: FULL PIPELINE INTEGRATION
+PHASE 1, 2 & 3: DUAL WORKSPACE STREAMING & POST-PROCESSING PLAYBACK MATRIX
 ================================================================================
 Engineered for ultra-low latency, native BoT-SORT appearance Re-ID, dark-mode
-enterprise telemetry, and web-safe H.264 transmutations.
+enterprise telemetry, synchronized live streaming, and side-by-side interactive
+browser video playback.
 """
 
 import os
@@ -117,7 +118,7 @@ def get_ffmpeg_binary() -> str:
 def convert_to_web_safe_h264(raw_input_path: str, web_output_path: str) -> bool:
     """
     Transmutes raw OpenCV mp4v video containers into web-safe H.264 / AAC MP4 format.
-    Guarantees native hardware playback across all standard web browsers.
+    Guarantees native hardware playback and seeking across all standard web browsers.
     """
     ffmpeg_bin = get_ffmpeg_binary()
     command = f'"{ffmpeg_bin}" -y -i "{raw_input_path}" -vcodec libx264 -pix_fmt yuv420p -f mp4 "{web_output_path}"'
@@ -141,11 +142,6 @@ def apply_enterprise_theme():
         }
 
         /* Metric Cards */
-        .metric-container {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
         .metric-card {
             background: linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
             border: 1px solid rgba(57, 255, 20, 0.25);
@@ -200,6 +196,11 @@ def apply_enterprise_theme():
             color: #39ff14;
             border: 1px solid rgba(57, 255, 20, 0.4);
         }
+        .badge-playback {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
 
         /* High-Visibility Download Button */
         div[data-testid="stDownloadButton"] > button {
@@ -210,8 +211,8 @@ def apply_enterprise_theme():
             letter-spacing: 0.04em !important;
             border: none !important;
             border-radius: 10px !important;
-            padding: 0.75rem 2rem !important;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35) !important;
+            padding: 0.85rem 2rem !important;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.38) !important;
             transition: all 0.25s ease-in-out !important;
         }
         div[data-testid="stDownloadButton"] > button:hover {
@@ -240,7 +241,7 @@ def render_metric_card(placeholder, label: str, value: str, subtext: str, value_
 
 
 # -----------------------------------------------------------------------------
-# 5. CORE EXECUTION ENGINE (PHASE 2 & PHASE 3)
+# 5. CORE EXECUTION ENGINE
 # -----------------------------------------------------------------------------
 def main():
     st.set_page_config(
@@ -301,7 +302,15 @@ def main():
 
     if uploaded_file is None:
         st.info("👈 Please upload a video stream via the sidebar to initialize the telemetry dashboard.")
+        # Reset session state on file removal
+        st.session_state.processed_session = None
         return
+
+    # Invalidate session cache if a different file is uploaded
+    file_key = f"{uploaded_file.name}_{uploaded_file.size}"
+    if st.session_state.get("active_file_key") != file_key:
+        st.session_state.active_file_key = file_key
+        st.session_state.processed_session = None
 
     # Buffer video stream to temporary file
     temp_video_path, metadata = buffer_uploaded_video(uploaded_file)
@@ -314,74 +323,113 @@ def main():
     metric_active_ph = col_m2.empty()
     metric_fps_ph = col_m3.empty()
 
-    # Initial static metrics state
-    render_metric_card(metric_unique_ph, "TOTAL UNIQUE PEOPLE", "0", "Awaiting Engine Activation", "#38bdf8")
-    render_metric_card(metric_active_ph, "ACTIVE TARGETS IN FRAME", "0", "0 active tracks", "#cbd5e1")
-    render_metric_card(metric_fps_ph, "ENGINE SPEED (FPS)", "0.0", f"Native Input: {metadata.fps:.1f} FPS", "#a855f7")
+    # Restore or set initial metrics
+    if st.session_state.get("processed_session"):
+        session = st.session_state.processed_session
+        render_metric_card(metric_unique_ph, "TOTAL UNIQUE PEOPLE", str(session["total_unique"]), "Final Unique Identified Count", NEON_GREEN_HEX)
+        render_metric_card(metric_active_ph, "ACTIVE TARGETS IN FRAME", "0", "Tracking Session Concluded", "#cbd5e1")
+        render_metric_card(metric_fps_ph, "ENGINE SPEED (FPS)", f"{session['avg_fps']:.1f}", f"Avg Processing Speed: {session['avg_fps']:.1f} FPS", NEON_GREEN_HEX)
+    else:
+        render_metric_card(metric_unique_ph, "TOTAL UNIQUE PEOPLE", "0", "Awaiting Engine Activation", "#38bdf8")
+        render_metric_card(metric_active_ph, "ACTIVE TARGETS IN FRAME", "0", "0 active tracks", "#cbd5e1")
+        render_metric_card(metric_fps_ph, "ENGINE SPEED (FPS)", "0.0", f"Native Input: {metadata.fps:.1f} FPS", "#a855f7")
 
     # -------------------------------------------------------------------------
-    # SIDE-BY-SIDE 2-COLUMN WORKSPACE LAYOUT
+    # WORKSPACE LAYOUT: DUAL COLUMN CONTAINER
     # -------------------------------------------------------------------------
     col_raw, col_proc = st.columns(2)
 
     with col_raw:
-        st.markdown('<div class="stream-badge badge-raw">📹 Input Video Stream</div>', unsafe_allow_html=True)
-        st.video(temp_video_path)
+        raw_badge_ph = st.empty()
+        raw_media_ph = st.empty()
 
     with col_proc:
-        st.markdown('<div class="stream-badge badge-live">⚡ Real-Time Tracking & Re-ID (BoT-SORT)</div>', unsafe_allow_html=True)
-        frame_window = st.empty()
-        # Initial preview before processing
-        frame_window.markdown(
-            """
-            <div style="height: 340px; display: flex; align-items: center; justify-content: center; 
-                        background: #111827; border: 1px dashed #334155; border-radius: 8px; color: #64748b;">
-                Click "Run Analysis Engine" below to trigger real-time detection & Re-ID
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        proc_badge_ph = st.empty()
+        proc_media_ph = st.empty()
 
-    # Control Button
+    # Control Button & Status
     st.markdown("---")
     start_col, _ = st.columns([1, 2])
     with start_col:
         run_engine = st.button("🚀 Run Real-Time Tracking & Re-ID Engine", type="primary", use_container_width=True)
 
+    # High-Visibility One-Click Download Container
+    download_container = st.empty()
+
     # Dynamic Tracking Event Table Expander
     event_expander = st.expander("📊 Dynamic Tracking & Re-ID Boundary Event Logs", expanded=True)
     with event_expander:
         event_table_ph = st.empty()
-        event_table_ph.info("No tracking events generated yet. Activate the engine to start capturing target transitions.")
 
-    # One-Click Download Container
-    download_container = st.empty()
+    # If already processed in this session, render the Dual Playback Matrix immediately
+    if st.session_state.get("processed_session") and not run_engine:
+        session = st.session_state.processed_session
+        raw_badge_ph.markdown('<div class="stream-badge badge-playback">📹 Source Video Playback (Raw)</div>', unsafe_allow_html=True)
+        raw_media_ph.video(session["raw_video_path"])
 
-    if not run_engine:
+        proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ AI Tracking & Re-ID Playback (BoT-SORT H.264)</div>', unsafe_allow_html=True)
+        proc_media_ph.video(session["web_video_path"])
+
+        if os.path.exists(session["web_video_path"]):
+            with open(session["web_video_path"], "rb") as dl_file:
+                video_bytes = dl_file.read()
+            base_name = os.path.splitext(uploaded_file.name)[0]
+            download_container.download_button(
+                label=f"📥 DOWNLOAD FULL ANALYZED TRACKING VIDEO ({len(video_bytes) / (1024*1024):.1f} MB)",
+                data=video_bytes,
+                file_name=f"tracked_{base_name}.mp4",
+                mime="video/mp4",
+                use_container_width=True,
+            )
+
+        if session["events_log"]:
+            df_events_stored = pd.DataFrame(reversed(session["events_log"]))
+            event_table_ph.dataframe(df_events_stored, use_container_width=True, hide_index=True)
+        else:
+            event_table_ph.info("No tracking events were triggered during this session.")
         return
 
-    # -------------------------------------------------------------------------
-    # HIGH-SPEED TRACKING LOOP WITH BOTSORT & CLASS FILTERING
-    # -------------------------------------------------------------------------
-    progress_bar = st.progress(0, text="Initializing OpenCV Hardware Decoder...")
-    
+    # If engine not running yet, show initial preview
+    if not run_engine:
+        raw_badge_ph.markdown('<div class="stream-badge badge-raw">📹 Input Video Stream (Source Preview)</div>', unsafe_allow_html=True)
+        raw_media_ph.video(temp_video_path)
+
+        proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ Real-Time Tracking & Re-ID (BoT-SORT)</div>', unsafe_allow_html=True)
+        proc_media_ph.markdown(
+            """
+            <div style="height: 340px; display: flex; align-items: center; justify-content: center; 
+                        background: #111827; border: 1px dashed #334155; border-radius: 8px; color: #64748b;">
+                Click "Run Real-Time Tracking & Re-ID Engine" below to trigger live detection & Re-ID
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        event_table_ph.info("No tracking events generated yet. Activate the engine to start capturing target transitions.")
+        return
+
+    # =========================================================================
+    # PHASE 1: SYNCHRONIZED WORKSPACE STREAMING STATES (DURING PROCESSING)
+    # =========================================================================
+    raw_badge_ph.markdown('<div class="stream-badge badge-raw">🔴 Live Raw Decoder Stream</div>', unsafe_allow_html=True)
+    proc_badge_ph.markdown('<div class="stream-badge badge-live">🟢 Live AI Tracking Overlay (BoT-SORT)</div>', unsafe_allow_html=True)
+
+    progress_bar = st.progress(0, text="Initializing OpenCV Hardware Decoder & Video Writer...")
+
     cap = cv2.VideoCapture(temp_video_path)
     if not cap.isOpened():
-        st.error("Failed to re-open buffered video stream for processing.")
+        st.error("Failed to open buffered video stream for processing.")
         return
 
-    # Prepare Web-Safe Output Destination & OpenCV VideoWriter
     pid = os.getpid()
     raw_output_path = os.path.join(tempfile.gettempdir(), f"raw_output_{pid}.mp4")
     web_output_path = os.path.join(tempfile.gettempdir(), f"web_output_{pid}.mp4")
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(raw_output_path, fourcc, metadata.fps, (metadata.width, metadata.height))
 
-    # Tracking & Telemetry State
     unique_person_ids: Set[int] = set()
     previous_frame_ids: Set[int] = set()
     events_log: List[dict] = []
-    
+
     total_frames = max(metadata.total_frames, 1)
     frame_idx = 0
     t_start = time.time()
@@ -398,7 +446,7 @@ def main():
             timestamp_sec = frame_idx / metadata.fps
 
             # -----------------------------------------------------------------
-            # FAST INFERENCE: classes=0 filters strictly to humans at inference
+            # FAST INFERENCE: classes=0 strictly filters human targets at inference
             # -----------------------------------------------------------------
             results = model.track(
                 source=frame,
@@ -428,17 +476,16 @@ def main():
                         # Draw Sleek Neon Green Tracking Box
                         cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), NEON_GREEN_BGR, 2)
 
-                        # Clean Neon Text Badge Overlay: [ID: X | Conf%]
+                        # Clean Neon Text Badge Overlay: [ID: X (conf)]
                         badge_text = f"ID: {track_id} ({conf:.2f})"
                         (tw, th), _ = cv2.getTextSize(badge_text, cv2.FONT_HERSHEY_SIMPLEX, 0.52, 2)
-                        
-                        # Position badge snug above bbox without clipping top frame
+
+                        # Snug position above bounding box without clipping top of frame
                         badge_y1 = max(0, y1 - th - 8)
                         badge_y2 = y1
                         badge_x1 = x1
                         badge_x2 = min(frame.shape[1], x1 + tw + 10)
 
-                        # Badge background and neon accent border
                         cv2.rectangle(annotated_frame, (badge_x1, badge_y1), (badge_x2, badge_y2), DARK_BADGE_BG_BGR, -1)
                         cv2.rectangle(annotated_frame, (badge_x1, badge_y1), (badge_x2, badge_y2), NEON_GREEN_BGR, 1)
                         cv2.putText(
@@ -478,22 +525,24 @@ def main():
 
             previous_frame_ids = current_frame_ids
 
-            # Write every rendered frame into output target buffer
+            # Dump rendered frame into output target buffer
             out.write(annotated_frame)
 
-            # Calculate Engine Speed (Rolling FPS)
+            # Calculate Rolling Processing Engine FPS
             frame_duration = time.time() - t_frame_start
             instant_fps = 1.0 / frame_duration if frame_duration > 0 else metadata.fps
             rolling_fps = (0.85 * rolling_fps) + (0.15 * instant_fps)
 
             # -----------------------------------------------------------------
-            # STREAMLIT REAL-TIME UI FLUSH (OPTIMIZED FRAME INTERVAL)
+            # SYNCHRONOUS SIDE-BY-SIDE FRAME STREAMING
             # -----------------------------------------------------------------
-            # Display every frame (or skip frames if needed for ultra-dense streams)
-            frame_rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
-            frame_window.image(frame_rgb, channels="RGB", use_container_width=True)
+            raw_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            annotated_rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
 
-            # Update Metric Bar & Progress Bar every 3 frames for UI smoothness
+            raw_media_ph.image(raw_rgb, channels="RGB", use_container_width=True)
+            proc_media_ph.image(annotated_rgb, channels="RGB", use_container_width=True)
+
+            # Update Metric Bar & Progress Bar every 3 frames for UI responsiveness
             if frame_idx % 3 == 0 or frame_idx == total_frames:
                 render_metric_card(
                     metric_unique_ph,
@@ -518,30 +567,27 @@ def main():
                 )
 
                 pct = min(1.0, frame_idx / total_frames)
-                progress_bar.progress(pct, text=f"Processing Video Stream: Frame {frame_idx}/{total_frames} ({int(pct*100)}%)")
+                progress_bar.progress(pct, text=f"Tracking & Re-ID Processing: Frame {frame_idx}/{total_frames} ({int(pct*100)}%)")
 
-            # Update event table if new transitions occurred
+            # Update event table as transitions occur
             if (entered_ids or exited_ids) and events_log:
-                df_events = pd.DataFrame(reversed(events_log[-50:]))  # Latest 50 events
+                df_events = pd.DataFrame(reversed(events_log[-50:]))
                 event_table_ph.dataframe(df_events, use_container_width=True, hide_index=True)
 
     finally:
-        # Securely release hardware memory pointers and file locks
+        # Securely release hardware pointers and file locks
         cap.release()
         out.release()
 
-    progress_bar.progress(1.0, text="Tracking loop completed. Stabilizing and transcoding web-safe H.264 stream...")
+    progress_bar.progress(1.0, text="Tracking loop completed. Stabilizing and transcoding web-safe H.264 stream via FFmpeg...")
 
-    # Final telemetry bar update
     total_elapsed = max(time.time() - t_start, 0.001)
     overall_fps = frame_idx / total_elapsed
+
+    # Final Telemetry Metric Bar Update
     render_metric_card(metric_unique_ph, "TOTAL UNIQUE PEOPLE", str(len(unique_person_ids)), "Final Unique Identified Count", NEON_GREEN_HEX)
     render_metric_card(metric_active_ph, "ACTIVE TARGETS IN FRAME", "0", "Tracking Session Concluded", "#cbd5e1")
     render_metric_card(metric_fps_ph, "ENGINE SPEED (FPS)", f"{overall_fps:.1f}", f"Avg Processing Speed: {overall_fps:.1f} FPS", NEON_GREEN_HEX)
-
-    if events_log:
-        df_events_final = pd.DataFrame(reversed(events_log))
-        event_table_ph.dataframe(df_events_final, use_container_width=True, hide_index=True)
 
     # -------------------------------------------------------------------------
     # STABILIZATION WORKAROUND: Transmute raw OpenCV MP4V to Web-Safe H.264 MP4
@@ -551,14 +597,27 @@ def main():
 
     final_delivery_path = web_output_path if transcode_success else raw_output_path
 
-    if transcode_success:
-        st.success(f"✅ Video processing complete! Stream transmuted into web-safe H.264 at {overall_fps:.1f} FPS average.")
-    else:
-        st.warning("⚠️ FFmpeg transmutation fallback to raw stream. Download is ready.")
+    # =========================================================================
+    # PHASE 2: DUAL PLAYBACK MATRIX (AFTER PROCESSING)
+    # =========================================================================
+    # Clear streaming frame wrappers and mount native interactive browser players
+    raw_media_ph.empty()
+    proc_media_ph.empty()
 
-    # -------------------------------------------------------------------------
-    # HIGH-VISIBILITY ONE-CLICK DOWNLOAD BUTTON
-    # -------------------------------------------------------------------------
+    raw_badge_ph.markdown('<div class="stream-badge badge-playback">📹 Source Video Playback (Raw Interactive)</div>', unsafe_allow_html=True)
+    raw_media_ph.video(temp_video_path)
+
+    proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ AI Tracking & Re-ID Playback (BoT-SORT H.264)</div>', unsafe_allow_html=True)
+    proc_media_ph.video(final_delivery_path)
+
+    if transcode_success:
+        st.success(f"✅ Video processing complete! Dual playback ready at {overall_fps:.1f} FPS average.")
+    else:
+        st.warning("⚠️ Transmuted using raw stream fallback. Dual playback ready.")
+
+    # =========================================================================
+    # PHASE 3: RETAIN PERFORMANCE LOGS & ONE-CLICK DOWNLOAD
+    # =========================================================================
     if os.path.exists(final_delivery_path):
         with open(final_delivery_path, "rb") as dl_file:
             video_bytes = dl_file.read()
@@ -572,7 +631,22 @@ def main():
             use_container_width=True,
         )
 
-    # Cleanup temporary raw output to free disk space
+    if events_log:
+        df_events_final = pd.DataFrame(reversed(events_log))
+        event_table_ph.dataframe(df_events_final, use_container_width=True, hide_index=True)
+    else:
+        event_table_ph.info("No boundary entry or exit events were detected during tracking.")
+
+    # Persist session state for seamless re-render upon download button interactions
+    st.session_state.processed_session = {
+        "raw_video_path": temp_video_path,
+        "web_video_path": final_delivery_path,
+        "total_unique": len(unique_person_ids),
+        "avg_fps": overall_fps,
+        "events_log": events_log,
+    }
+
+    # Cleanup temporary raw intermediate file
     if os.path.exists(raw_output_path):
         try:
             os.remove(raw_output_path)
