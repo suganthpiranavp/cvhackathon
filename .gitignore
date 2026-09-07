@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & Virtual Envs
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Model weights & large binaries (auto-downloaded by Ultralytics on runtime)
+*.pt
+*.onnx
+*.engine
+
+# Video containers & temporary buffers
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Streamlit secrets & local configs
+.streamlit/secrets.toml
+
+# OS artifacts
+.DS_Store
+Thumbs.db
