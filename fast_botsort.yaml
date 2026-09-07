@@ -1,0 +1,21 @@
+# ==============================================================================
+# FAST BOT-SORT TRACKER CONFIGURATION: ANTI-FRAGMENTATION & ZERO-GMC OVERHEAD
+# ==============================================================================
+tracker_type: botsort
+
+# Detection and association thresholds
+track_high_thresh: 0.30  # High confidence detection matching threshold
+track_low_thresh: 0.10   # Low confidence threshold: preserves targets dropping into shadows
+new_track_thresh: 0.60   # Strict threshold: eliminates false-positive ghost tracks
+track_buffer: 90         # Extended 90-frame memory buffer (3 seconds) to bridge occlusions/shadows
+match_thresh: 0.70       # Balanced similarity threshold for trajectory continuity
+fuse_score: True         # Fuses detection score with motion for enhanced track stability
+
+# BoT-SORT specifics (GMC stripped to eliminate CPU processing bottleneck)
+gmc_method: none
+
+# Appearance Re-Identification parameters (Deep ReID active)
+proximity_thresh: 0.50
+appearance_thresh: 0.75
+with_reid: True
+model: auto

@@ -49,12 +49,19 @@ class VideoMetadata:
 # 1. HIGH-EFFICIENCY MODEL CACHING (WARM IN-RAM ENGINE)
 # -----------------------------------------------------------------------------
 @st.cache_resource(show_spinner="⚡ Initializing YOLOv8 Neural Engine into RAM...")
-def load_yolo_model(weights_path: str = DEFAULT_MODEL_WEIGHTS) -> YOLO:
+def load_yolo_model(
+    openvino_path: str = "yolov8n_openvino_model",
+    fallback_weights: str = DEFAULT_MODEL_WEIGHTS,
+) -> YOLO:
     """
-    Loads YOLOv8 Nano weights and retains the model warm in memory.
+    Loads OpenVINO compiled model directory for accelerated CPU inference if available;
+    otherwise falls back to standard PyTorch weights.
     Streamlit's @st.cache_resource prevents redundant instantiation across UI reruns.
     """
-    model = YOLO(weights_path)
+    if os.path.exists(openvino_path):
+        model = YOLO(openvino_path)
+    else:
+        model = YOLO(fallback_weights)
     return model
 
 
@@ -269,8 +276,8 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # 1. Warm up YOLO Engine in RAM
-    model = load_yolo_model(DEFAULT_MODEL_WEIGHTS)
+    # 1. Warm up YOLO Engine in RAM (OpenVINO with PyTorch fallback)
+    model = load_yolo_model("yolov8n_openvino_model", DEFAULT_MODEL_WEIGHTS)
 
     # 2. Sidebar Configuration
     with st.sidebar:
@@ -450,7 +457,7 @@ def main():
             # -----------------------------------------------------------------
             results = model.track(
                 source=frame,
-                tracker=TRACKER_CONFIG,
+                tracker="fast_botsort.yaml",
                 persist=True,
                 classes=0,
                 conf=confidence_threshold,
@@ -534,13 +541,29 @@ def main():
             rolling_fps = (0.85 * rolling_fps) + (0.15 * instant_fps)
 
             # -----------------------------------------------------------------
-            # SYNCHRONOUS SIDE-BY-SIDE FRAME STREAMING
+            # NATIVE DESKTOP WINDOW RENDERING (WITH THREAD-SAFE FALLBACK)
             # -----------------------------------------------------------------
-            raw_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            annotated_rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
+            try:
+                cv2.imshow("VisionOps - Real-Time AI Tracking (Press 'q' to Exit)", annotated_frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+            except (cv2.error, Exception):
+                # macOS Cocoa prevents GUI window creation from non-main worker threads (Streamlit).
+                # Fallback to high-performance, throttled dual-stream browser rendering.
+                if frame_idx % 2 == 0 or frame_idx == total_frames:
+                    if metadata.width > 800:
+                        disp_w = 720
+                        disp_h = int(metadata.height * (disp_w / metadata.width))
+                        disp_raw = cv2.resize(frame, (disp_w, disp_h), interpolation=cv2.INTER_LINEAR)
+                        disp_proc = cv2.resize(annotated_frame, (disp_w, disp_h), interpolation=cv2.INTER_LINEAR)
+                    else:
+                        disp_raw = frame
+                        disp_proc = annotated_frame
 
-            raw_media_ph.image(raw_rgb, channels="RGB", use_container_width=True)
-            proc_media_ph.image(annotated_rgb, channels="RGB", use_container_width=True)
+                    raw_rgb = cv2.cvtColor(disp_raw, cv2.COLOR_BGR2RGB)
+                    annotated_rgb = cv2.cvtColor(disp_proc, cv2.COLOR_BGR2RGB)
+                    raw_media_ph.image(raw_rgb, channels="RGB", use_container_width=True)
+                    proc_media_ph.image(annotated_rgb, channels="RGB", use_container_width=True)
 
             # Update Metric Bar & Progress Bar every 3 frames for UI responsiveness
             if frame_idx % 3 == 0 or frame_idx == total_frames:
@@ -578,6 +601,10 @@ def main():
         # Securely release hardware pointers and file locks
         cap.release()
         out.release()
+        try:
+            cv2.destroyAllWindows()
+        except Exception:
+            pass
 
     progress_bar.progress(1.0, text="Tracking loop completed. Stabilizing and transcoding web-safe H.264 stream via FFmpeg...")
 
