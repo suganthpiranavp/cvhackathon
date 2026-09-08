@@ -179,25 +179,25 @@ def apply_enterprise_theme():
             box-shadow: 0 6px 22px rgba(14, 165, 233, 0.15);
         }
         .metric-label {
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.09em;
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
             color: #94a3b8;
             margin-bottom: 0.4rem;
         }
         .metric-value {
-            font-size: 2.15rem;
-            font-weight: 800;
+            font-size: 2.25rem;
+            font-weight: 900;
             line-height: 1.1;
             letter-spacing: -0.02em;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
         .metric-subtext {
-            font-size: 0.74rem;
+            font-size: 0.76rem;
             color: #64748b;
             margin-top: 0.35rem;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         /* Stream Header Badges */
@@ -300,28 +300,19 @@ def main():
 
     st.markdown(
         """
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0 1.2rem 0; border-bottom: 1px solid #1e293b; margin-bottom: 1.4rem;">
-            <div style="display: flex; align-items: center; gap: 0.85rem;">
-                <div style="background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); border-radius: 8px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+        <div style="display: flex; align-items: center; padding: 0.8rem 0 1.2rem 0; border-bottom: 1px solid #1e293b; margin-bottom: 1.4rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); border-radius: 10px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; font-size: 1.7rem;">
                     ⚡
                 </div>
                 <div>
-                    <div style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: #f8fafc; line-height: 1.2;">
+                    <div style="font-size: 2.35rem; font-weight: 900; letter-spacing: -0.03em; color: #f8fafc; line-height: 1.1;">
                         START-US <span style="color: #0ea5e9;">VISION</span>
                     </div>
-                    <div style="font-size: 0.76rem; font-weight: 600; letter-spacing: 0.06em; color: #64748b; text-transform: uppercase; margin-top: 2px;">
+                    <div style="font-size: 0.84rem; font-weight: 700; letter-spacing: 0.08em; color: #94a3b8; text-transform: uppercase; margin-top: 3px;">
                         Enterprise Surveillance Intelligence &amp; Re-ID Engine
                     </div>
                 </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <span style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.8rem; border-radius: 20px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em; background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
-                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-                    SYSTEM ONLINE
-                </span>
-                <span style="display: inline-flex; align-items: center; padding: 0.35rem 0.8rem; border-radius: 20px; font-size: 0.74rem; font-weight: 600; background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid #334155;">
-                    YOLOv8n + BoT-SORT
-                </span>
             </div>
         </div>
         """,
@@ -533,43 +524,43 @@ def main():
                         unique_person_ids.add(track_id)
 
                         # Draw Crisp Cyber Cyan Bounding Box & HUD Corner Reticles
-                        cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), CYAN_ACCENT_BGR, 1)
+                        cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), CYAN_ACCENT_BGR, 2)
 
-                        # Corner Reticle Brackets (Defense HUD style)
-                        corner_len = max(8, min(18, (x2 - x1) // 5, (y2 - y1) // 5))
+                        # Corner Reticle Brackets (Defense HUD style, thick 4px)
+                        corner_len = max(10, min(22, (x2 - x1) // 4, (y2 - y1) // 4))
                         # Top-Left
-                        cv2.line(annotated_frame, (x1, y1), (x1 + corner_len, y1), CYAN_ACCENT_BGR, 3)
-                        cv2.line(annotated_frame, (x1, y1), (x1, y1 + corner_len), CYAN_ACCENT_BGR, 3)
+                        cv2.line(annotated_frame, (x1, y1), (x1 + corner_len, y1), CYAN_ACCENT_BGR, 4)
+                        cv2.line(annotated_frame, (x1, y1), (x1, y1 + corner_len), CYAN_ACCENT_BGR, 4)
                         # Top-Right
-                        cv2.line(annotated_frame, (x2, y1), (x2 - corner_len, y1), CYAN_ACCENT_BGR, 3)
-                        cv2.line(annotated_frame, (x2, y1), (x2, y1 + corner_len), CYAN_ACCENT_BGR, 3)
+                        cv2.line(annotated_frame, (x2, y1), (x2 - corner_len, y1), CYAN_ACCENT_BGR, 4)
+                        cv2.line(annotated_frame, (x2, y1), (x2, y1 + corner_len), CYAN_ACCENT_BGR, 4)
                         # Bottom-Left
-                        cv2.line(annotated_frame, (x1, y2), (x1 + corner_len, y2), CYAN_ACCENT_BGR, 3)
-                        cv2.line(annotated_frame, (x1, y2), (x1, y2 - corner_len), CYAN_ACCENT_BGR, 3)
+                        cv2.line(annotated_frame, (x1, y2), (x1 + corner_len, y2), CYAN_ACCENT_BGR, 4)
+                        cv2.line(annotated_frame, (x1, y2), (x1, y2 - corner_len), CYAN_ACCENT_BGR, 4)
                         # Bottom-Right
-                        cv2.line(annotated_frame, (x2, y2), (x2 - corner_len, y2), CYAN_ACCENT_BGR, 3)
-                        cv2.line(annotated_frame, (x2, y2), (x2, y2 - corner_len), CYAN_ACCENT_BGR, 3)
+                        cv2.line(annotated_frame, (x2, y2), (x2 - corner_len, y2), CYAN_ACCENT_BGR, 4)
+                        cv2.line(annotated_frame, (x2, y2), (x2, y2 - corner_len), CYAN_ACCENT_BGR, 4)
 
-                        # Sleek Capsule Badge Overlay: [ID: #01 | 94%]
+                        # Thick, High-Visibility Capsule Badge Overlay: [ID: #01 | 94%]
                         badge_text = f"ID #{track_id:02d} | {conf * 100:.0f}%" if track_id < 100 else f"ID #{track_id} | {conf * 100:.0f}%"
-                        (tw, th), _ = cv2.getTextSize(badge_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+                        (tw, th), _ = cv2.getTextSize(badge_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
 
                         # Snug position above bounding box without clipping top of frame
-                        badge_y1 = max(0, y1 - th - 8)
+                        badge_y1 = max(0, y1 - th - 10)
                         badge_y2 = y1
                         badge_x1 = x1
-                        badge_x2 = min(frame.shape[1], x1 + tw + 10)
+                        badge_x2 = min(frame.shape[1], x1 + tw + 12)
 
                         cv2.rectangle(annotated_frame, (badge_x1, badge_y1), (badge_x2, badge_y2), DARK_HUD_BG_BGR, -1)
-                        cv2.rectangle(annotated_frame, (badge_x1, badge_y1), (badge_x2, badge_y2), CYAN_ACCENT_BGR, 1)
+                        cv2.rectangle(annotated_frame, (badge_x1, badge_y1), (badge_x2, badge_y2), CYAN_ACCENT_BGR, 2)
                         cv2.putText(
                             annotated_frame,
                             badge_text,
-                            (badge_x1 + 5, badge_y2 - 4),
+                            (badge_x1 + 6, badge_y2 - 5),
                             cv2.FONT_HERSHEY_SIMPLEX,
-                            0.45,
+                            0.55,
                             TEXT_WHITE_BGR,
-                            1,
+                            2,
                             cv2.LINE_AA,
                         )
 
