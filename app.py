@@ -479,6 +479,13 @@ def main():
     unique_person_ids: Set[int] = set()
     previous_frame_ids: Set[int] = set()
     events_log: List[dict] = []
+    display_id_map: dict = {}
+
+    def get_display_id(raw_id: int) -> int:
+        """Maps raw tracker IDs 1-to-1 to clean sequential display IDs starting from 1."""
+        if raw_id not in display_id_map:
+            display_id_map[raw_id] = len(display_id_map) + 1
+        return display_id_map[raw_id]
 
     total_frames = max(metadata.total_frames, 1)
     frame_idx = 0
@@ -519,9 +526,10 @@ def main():
                     confs = boxes.conf.cpu().numpy()
 
                     for box, track_id, conf in zip(xyxy_coords, track_ids, confs):
+                        disp_id = get_display_id(track_id)
                         x1, y1, x2, y2 = box
-                        current_frame_ids.add(track_id)
-                        unique_person_ids.add(track_id)
+                        current_frame_ids.add(disp_id)
+                        unique_person_ids.add(disp_id)
 
                         # Draw Crisp Cyber Cyan Bounding Box & HUD Corner Reticles
                         cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), CYAN_ACCENT_BGR, 2)
@@ -542,7 +550,7 @@ def main():
                         cv2.line(annotated_frame, (x2, y2), (x2, y2 - corner_len), CYAN_ACCENT_BGR, 4)
 
                         # Thick, High-Visibility Capsule Badge Overlay: [ID: #01 | 94%]
-                        badge_text = f"ID #{track_id:02d} | {conf * 100:.0f}%" if track_id < 100 else f"ID #{track_id} | {conf * 100:.0f}%"
+                        badge_text = f"ID #{disp_id:02d} | {conf * 100:.0f}%" if disp_id < 100 else f"ID #{disp_id} | {conf * 100:.0f}%"
                         (tw, th), _ = cv2.getTextSize(badge_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
 
                         # Snug position above bounding box without clipping top of frame
