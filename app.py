@@ -252,7 +252,7 @@ def render_metric_card(placeholder, label: str, value: str, subtext: str, value_
 # -----------------------------------------------------------------------------
 def main():
     st.set_page_config(
-        page_title="Enterprise Person Tracking & Visual Re-ID",
+        page_title="START-US",
         page_icon="⚡",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -265,11 +265,8 @@ def main():
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
             <div>
                 <h1 style="margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em;">
-                    ⚡ VisionOps <span style="color: #39ff14;">Re-ID Engine</span>
+                    ⚡ START-US <span style="color: #39ff14;">VISION</span>
                 </h1>
-                <p style="margin: 0.3rem 0 0 0; color: #94a3b8; font-size: 0.95rem;">
-                    Ultra-Fast Person Detection, Native BoT-SORT Motion Tracking & Appearance Re-Identification
-                </p>
             </div>
         </div>
         """,
@@ -304,7 +301,7 @@ def main():
             max_value=0.90,
             value=0.35,
             step=0.05,
-            help="Confidence threshold for human detection before feeding into BoT-SORT",
+            help="Confidence threshold for human detection before feeding into tracker",
         )
 
     if uploaded_file is None:
@@ -358,13 +355,13 @@ def main():
     st.markdown("---")
     start_col, _ = st.columns([1, 2])
     with start_col:
-        run_engine = st.button("🚀 Run Real-Time Tracking & Re-ID Engine", type="primary", use_container_width=True)
+        run_engine = st.button("🚀 Run Real-Time Tracking Engine", type="primary", use_container_width=True)
 
     # High-Visibility One-Click Download Container
     download_container = st.empty()
 
     # Dynamic Tracking Event Table Expander
-    event_expander = st.expander("📊 Dynamic Tracking & Re-ID Boundary Event Logs", expanded=True)
+    event_expander = st.expander("📊 Dynamic Tracking", expanded=True)
     with event_expander:
         event_table_ph = st.empty()
 
@@ -374,7 +371,7 @@ def main():
         raw_badge_ph.markdown('<div class="stream-badge badge-playback">📹 Source Video Playback (Raw)</div>', unsafe_allow_html=True)
         raw_media_ph.video(session["raw_video_path"])
 
-        proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ AI Tracking & Re-ID Playback (BoT-SORT H.264)</div>', unsafe_allow_html=True)
+        proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ AI Tracking Playback (H.264)</div>', unsafe_allow_html=True)
         proc_media_ph.video(session["web_video_path"])
 
         if os.path.exists(session["web_video_path"]):
@@ -401,12 +398,12 @@ def main():
         raw_badge_ph.markdown('<div class="stream-badge badge-raw">📹 Input Video Stream (Source Preview)</div>', unsafe_allow_html=True)
         raw_media_ph.video(temp_video_path)
 
-        proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ Real-Time Tracking & Re-ID (BoT-SORT)</div>', unsafe_allow_html=True)
+        proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ Real-Time Tracking</div>', unsafe_allow_html=True)
         proc_media_ph.markdown(
             """
             <div style="height: 340px; display: flex; align-items: center; justify-content: center; 
                         background: #111827; border: 1px dashed #334155; border-radius: 8px; color: #64748b;">
-                Click "Run Real-Time Tracking & Re-ID Engine" below to trigger live detection & Re-ID
+                Click "Run Real-Time Tracking Engine" below to trigger live detection
             </div>
             """,
             unsafe_allow_html=True,
@@ -418,7 +415,7 @@ def main():
     # PHASE 1: SYNCHRONIZED WORKSPACE STREAMING STATES (DURING PROCESSING)
     # =========================================================================
     raw_badge_ph.markdown('<div class="stream-badge badge-raw">🔴 Live Raw Decoder Stream</div>', unsafe_allow_html=True)
-    proc_badge_ph.markdown('<div class="stream-badge badge-live">🟢 Live AI Tracking Overlay (BoT-SORT)</div>', unsafe_allow_html=True)
+    proc_badge_ph.markdown('<div class="stream-badge badge-live">🟢 Live AI Tracking Overlay</div>', unsafe_allow_html=True)
 
     progress_bar = st.progress(0, text="Initializing OpenCV Hardware Decoder & Video Writer...")
 
@@ -544,7 +541,7 @@ def main():
             # NATIVE DESKTOP WINDOW RENDERING (WITH THREAD-SAFE FALLBACK)
             # -----------------------------------------------------------------
             try:
-                cv2.imshow("VisionOps - Real-Time AI Tracking (Press 'q' to Exit)", annotated_frame)
+                cv2.imshow("START-US VISION - Real-Time AI Tracking (Press 'q' to Exit)", annotated_frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
             except (cv2.error, Exception):
@@ -571,7 +568,7 @@ def main():
                     metric_unique_ph,
                     "TOTAL UNIQUE PEOPLE",
                     str(len(unique_person_ids)),
-                    f"Session Re-ID Pool: {len(unique_person_ids)} targets",
+                    f"Session Tracking Pool: {len(unique_person_ids)} targets",
                     NEON_GREEN_HEX,
                 )
                 render_metric_card(
@@ -590,7 +587,7 @@ def main():
                 )
 
                 pct = min(1.0, frame_idx / total_frames)
-                progress_bar.progress(pct, text=f"Tracking & Re-ID Processing: Frame {frame_idx}/{total_frames} ({int(pct*100)}%)")
+                progress_bar.progress(pct, text=f"Tracking Processing: Frame {frame_idx}/{total_frames} ({int(pct*100)}%)")
 
             # Update event table as transitions occur
             if (entered_ids or exited_ids) and events_log:
@@ -634,7 +631,7 @@ def main():
     raw_badge_ph.markdown('<div class="stream-badge badge-playback">📹 Source Video Playback (Raw Interactive)</div>', unsafe_allow_html=True)
     raw_media_ph.video(temp_video_path)
 
-    proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ AI Tracking & Re-ID Playback (BoT-SORT H.264)</div>', unsafe_allow_html=True)
+    proc_badge_ph.markdown('<div class="stream-badge badge-live">⚡ AI Tracking Playback (H.264)</div>', unsafe_allow_html=True)
     proc_media_ph.video(final_delivery_path)
 
     if transcode_success:
